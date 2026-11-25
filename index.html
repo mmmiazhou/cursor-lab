@@ -1,0 +1,1763 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cursor lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300..800&family=Rubik+Mono+One&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/css2?family=Sixtyfour&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Bonbon&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Coral+Pixels&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Momo+Signature&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sekuya&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Dr+Sugiyama&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Candal&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Dawning+of+a+New+Day&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+10&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #ffffff;
+        color: #111111;
+        font-family: ui-monospace, Menlo, monospace;
+        overflow: hidden;
+      }
+
+      /* ---- panels ---- */
+      .panel {
+        position: fixed;
+        z-index: 10;
+        border: 2px solid #111;
+        background: #fff;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        line-height: 1.9;
+        user-select: none;
+        font-family: ui-monospace, Menlo, monospace;
+      }
+      .panel h1 {
+        margin: 0 0 0.25rem;
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .panel button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        background: none;
+        padding: 0 0.25rem;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .panel button:hover {
+        background: #eee;
+      }
+      .panel button.active {
+        background: #111;
+        color: #fff;
+      }
+      .panel button.missing {
+        color: #999;
+      }
+      .panel button.missing::after {
+        content: ' (not installed)';
+        font-size: 0.75em;
+      }
+
+      /* ---- DJ console ---- */
+      #dj {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+        gap: 1rem 1.5rem;
+        align-items: start;
+      }
+      /* Each section scrolls on its own; the panel itself stays put. */
+      #dj .options {
+        max-height: 10.5rem;
+        overflow-y: auto;
+      }
+      #dj .options::-webkit-scrollbar {
+        width: 6px;
+      }
+      #dj .options::-webkit-scrollbar-thumb {
+        background: #111;
+      }
+      #dj .options::-webkit-scrollbar-track {
+        background: #eee;
+      }
+      #dj .deck h1 {
+        border-bottom: 2px solid #111;
+        padding-bottom: 0.15rem;
+        margin-bottom: 0.4rem;
+      }
+      #dj .options button {
+        font-size: 0.8rem;
+        line-height: 1.75;
+      }
+      #deck-lanes .count {
+        display: flex;
+        gap: 0.3rem;
+        margin-bottom: 0.35rem;
+      }
+      #deck-lanes .count button {
+        width: auto;
+        border: 1.5px solid #111;
+        padding: 0 0.45rem;
+      }
+      #soundtoggle {
+        margin-bottom: 0.5rem;
+        border: 2px solid #111;
+        padding: 0.1rem 0.4rem;
+        width: auto;
+      }
+      .slider-row {
+        display: grid;
+        grid-template-columns: 4.2rem 1fr 2.4rem;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .slider-row label {
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 0.7em;
+      }
+      .slider-row span {
+        text-align: right;
+        font-size: 0.7em;
+        color: #555;
+      }
+      .slider-row input[type='range'] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 2px;
+        background: #111;
+        cursor: pointer;
+      }
+      .slider-row input[type='range']::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 0.85rem;
+        height: 0.85rem;
+        background: #fff;
+        border: 2px solid #111;
+        border-radius: 0;
+      }
+      .slider-row input[type='range']:active::-webkit-slider-thumb,
+      .slider-row input[type='range']:hover::-webkit-slider-thumb {
+        background: #111;
+      }
+
+      #stage {
+        position: relative;
+        /* Stop above the DJ console — text never runs under the panel. */
+        height: calc(100% - var(--dj-h, 12rem) - 1.5rem);
+        overflow: hidden;
+      }
+
+      /* ---- shared: caret + letters ---- */
+      .cursor {
+        display: inline-block;
+        width: 0.06em;
+        height: 0.95em;
+        vertical-align: text-bottom;
+        background: #111111;
+      }
+      .cursor.blinking {
+        animation: blink 1.1s steps(1) infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+      .pletter {
+        display: inline-block;
+        white-space: pre;
+      }
+
+      /* ---- parallel lanes: each hosts its own cursor experiment ---- */
+      #stage {
+        display: flex;
+        flex-direction: column;
+      }
+      .lane {
+        position: relative;
+        flex: 1 1 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .lane + .lane {
+        border-top: 1.5px dashed #bbb;
+      }
+      .lane.mode-ordinary {
+        display: grid;
+        place-items: center;
+      }
+      .line {
+        font-size: inherit;
+        line-height: 1.15;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        max-width: 92vw;
+        text-align: center;
+      }
+
+      /* ---- print head: text slides out of a pinned cursor ---- */
+      .tape {
+        position: absolute;
+        left: 50%; /* fallback — JS drives the pin position */
+        top: 50%;
+        transform: translate(-100%, -50%);
+        font-size: inherit;
+        line-height: 1.15;
+        white-space: pre;
+        text-align: right;
+      }
+      .stamp {
+        display: inline-block;
+        animation: stamp 0.16s ease-out;
+      }
+      @keyframes stamp {
+        from {
+          transform: scale(1.7);
+          opacity: 0;
+        }
+      }
+      .cursor.press {
+        animation: press 0.14s ease-out;
+      }
+      @keyframes press {
+        50% {
+          transform: scaleY(0.8);
+        }
+      }
+
+      /* ---- pac-man delete: swaps in for the cursor while chomping ---- */
+      .pacswap {
+        display: inline-block;
+        position: relative;
+        width: 1em;
+        height: 1em;
+        vertical-align: text-bottom;
+        animation: pacin 0.12s ease-out;
+      }
+      @keyframes pacin {
+        from {
+          opacity: 0;
+          transform: scale(0.6);
+        }
+      }
+      .pacswap.pacout,
+      .tridel.pacout,
+      .crewdel.pacout {
+        animation: pacout 0.15s ease-in forwards;
+      }
+
+      /* ---- crew delete: mirrored pushers on the right shove the caret back ---- */
+      .crewdel {
+        display: inline-block;
+        position: relative;
+        width: 0.57em;
+        height: 1em;
+        margin-left: 0.02em;
+        vertical-align: text-bottom;
+        animation: pacin 0.12s ease-out;
+      }
+      .crewdel .crew {
+        position: static;
+        width: 100%;
+        height: 100%;
+        transform: scaleX(-1);
+        /* mirror around the center — the inherited corner origin would
+           reflect the drawing clean out of its own box */
+        transform-origin: 50% 50%;
+      }
+      .crewdel.shoveleft .crew {
+        animation: shoveleft 0.22s ease-out;
+      }
+      @keyframes shoveleft {
+        0%,
+        100% {
+          transform: scaleX(-1);
+        }
+        35% {
+          transform: scaleX(-1) translateX(0.06em);
+        }
+      }
+
+      /* ---- triangle: points where the text is going; flips to delete ---- */
+      .tri {
+        display: inline-block;
+        width: 0.55em;
+        height: 0.72em;
+        margin-left: 0.08em;
+        background: #111;
+        clip-path: polygon(0 0, 100% 50%, 0 100%);
+      }
+      .tri.lunge {
+        animation: lunge 0.15s ease-out;
+      }
+      @keyframes lunge {
+        40% {
+          transform: translateX(0.18em);
+        }
+      }
+      .tridel {
+        display: inline-block;
+        position: relative;
+        width: 0.55em;
+        height: 0.72em;
+        margin-left: 0.08em;
+        background: #111;
+        clip-path: polygon(100% 0, 0 50%, 100% 100%);
+        animation: pacin 0.12s ease-out;
+      }
+      .tridel.jab {
+        animation: jab 0.15s ease-out;
+      }
+      @keyframes jab {
+        40% {
+          transform: translateX(-0.18em);
+        }
+      }
+      .sucked {
+        animation: sucked 0.15s ease-in forwards;
+      }
+      @keyframes sucked {
+        to {
+          opacity: 0;
+          transform: translateX(0.4em) scaleX(0.4);
+        }
+      }
+      @keyframes pacout {
+        to {
+          opacity: 0;
+          transform: scale(0.6);
+        }
+      }
+      .pjaw {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 50%;
+        background: #ffcf3f;
+      }
+      .pjaw.top {
+        top: 0;
+        border-radius: 0.5em 0.5em 0 0;
+        transform-origin: 50% 100%;
+      }
+      .pjaw.bottom {
+        bottom: 0;
+        border-radius: 0 0 0.5em 0.5em;
+        transform-origin: 50% 0%;
+      }
+      /* Mouth opens to the left — pac-man eats backwards.
+         One chomp per Backspace press, retriggered by the .chomping class. */
+      .chomping .pjaw.top {
+        animation: chomp-top 0.18s ease-out;
+      }
+      .chomping .pjaw.bottom {
+        animation: chomp-bottom 0.18s ease-out;
+      }
+      @keyframes chomp-top {
+        50% {
+          transform: rotate(38deg);
+        }
+      }
+      @keyframes chomp-bottom {
+        50% {
+          transform: rotate(-38deg);
+        }
+      }
+      .pacswap .eye {
+        position: absolute;
+        top: 13%;
+        left: 40%;
+        width: 0.11em;
+        height: 0.11em;
+        border-radius: 50%;
+        background: #111;
+        z-index: 1;
+      }
+
+      /* ---- delete animations ---- */
+      .eaten {
+        animation: eaten 0.13s ease-in forwards;
+        /* width collapses in step with the shrink, so the line slides
+           smoothly instead of popping when the letter is removed */
+        transition: width 0.14s ease-in;
+        overflow: hidden;
+      }
+      @keyframes eaten {
+        to {
+          opacity: 0;
+          transform: scale(0.15);
+        }
+      }
+      .dissolving {
+        animation: dissolving 0.3s ease-out forwards;
+      }
+      @keyframes dissolving {
+        to {
+          opacity: 0;
+          filter: blur(0.15em);
+          transform: translateY(-0.2em);
+        }
+      }
+      .flicked {
+        animation: flicked 0.3s ease-in forwards;
+      }
+      @keyframes flicked {
+        to {
+          opacity: 0;
+          transform: translate(0.8em, -1.2em) rotate(80deg);
+        }
+      }
+
+      /* ---- bouncing ball ---- */
+      .ball {
+        display: inline-block;
+        width: 0.38em;
+        height: 0.38em;
+        margin-left: 0.06em;
+        border-radius: 50%;
+        background: #111;
+        animation: bob 1.2s ease-in-out infinite;
+      }
+      @keyframes bob {
+        50% {
+          transform: translateY(-0.35em);
+        }
+      }
+      .ball.hop {
+        animation: hop 0.28s cubic-bezier(0.3, 0, 0.4, 1);
+      }
+      @keyframes hop {
+        35% {
+          transform: translateY(-0.9em);
+        }
+        70% {
+          transform: translateY(0) scaleY(0.75) scaleX(1.2);
+        }
+      }
+      .squash {
+        transform-origin: 50% 100%;
+        animation: squash 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      @keyframes squash {
+        0% {
+          transform: scaleY(0.2);
+        }
+        60% {
+          transform: scaleY(1.12);
+        }
+      }
+
+      /* ---- jelly ---- */
+      .jellycur {
+        display: inline-block;
+        width: 0.22em;
+        height: 1.05em;
+        margin-left: 0.04em;
+        border-radius: 0.12em;
+        background: #111;
+        vertical-align: text-bottom;
+        transform-origin: 50% 100%;
+        animation: jelly-idle 2.4s ease-in-out infinite;
+      }
+      @keyframes jelly-idle {
+        50% {
+          transform: scaleY(0.94) scaleX(1.15);
+        }
+      }
+      .jellycur.wobble {
+        animation: wobble 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+      }
+      @keyframes wobble {
+        20% {
+          transform: scaleX(1.7) scaleY(0.6);
+        }
+        45% {
+          transform: scaleX(0.7) scaleY(1.25);
+        }
+        70% {
+          transform: scaleX(1.15) scaleY(0.92);
+        }
+      }
+      .pop {
+        animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      @keyframes pop {
+        0% {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+      }
+
+      /* ---- magnet ---- */
+      .flyin {
+        animation: flyin 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+      }
+      @keyframes flyin {
+        0% {
+          transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--rot, 0deg));
+          opacity: 0;
+        }
+        60% {
+          opacity: 1;
+        }
+      }
+
+      /* ---- spider silk ---- */
+      /* Each letter hangs in a sleeve: a curved thread (catenary-ish SVG,
+         constant 1.5px stroke) reaches down and touches the glyph, the
+         whole strand sways like a pendulum, and the letter lags slightly
+         behind the thread for a physical whip feel. */
+      .silks {
+        display: inline-block;
+        position: relative;
+        translate: 0 var(--drop, 0.5em);
+        transform-origin: 50% calc(-1 * var(--drop, 0.5em));
+        animation: sway 3s ease-in-out infinite;
+      }
+      .thread {
+        position: absolute;
+        left: 50%;
+        bottom: 72%;
+        transform: translateX(-50%);
+        width: 0.3em;
+        height: calc(var(--drop, 0.5em) + 0.33em);
+        overflow: visible;
+      }
+      .bob {
+        display: inline-block;
+        animation: bobsway 3s ease-in-out infinite;
+      }
+      @keyframes sway {
+        0%,
+        100% {
+          rotate: -3deg;
+        }
+        50% {
+          rotate: 3deg;
+        }
+      }
+      @keyframes bobsway {
+        0%,
+        100% {
+          rotate: 2deg;
+        }
+        50% {
+          rotate: -2deg;
+        }
+      }
+      .spider {
+        display: inline-block;
+        position: relative;
+        width: 0.55em;
+        margin-left: 0.15em;
+        animation: spiderbob 1.8s ease-in-out infinite;
+      }
+      .spider::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 90%;
+        width: 1.5px;
+        height: 80vh;
+        background: #111;
+      }
+      .spider svg {
+        display: block;
+        width: 100%;
+      }
+      @keyframes spiderbob {
+        50% {
+          translate: 0 0.3em;
+        }
+      }
+
+      /* ---- ghost writer ---- */
+      .materialize {
+        animation: materialize 0.7s ease-out;
+      }
+      @keyframes materialize {
+        0% {
+          opacity: 0;
+          filter: blur(0.12em);
+          transform: translateY(-0.25em);
+        }
+        100% {
+          opacity: 1;
+          filter: blur(0);
+        }
+      }
+      .ghostcur {
+        display: inline-block;
+        width: 0.14em;
+        height: 1.1em;
+        margin-left: 0.04em;
+        border-radius: 0.07em;
+        background: #111;
+        vertical-align: text-bottom;
+        animation: flicker 1.6s linear infinite;
+      }
+      @keyframes flicker {
+        0%,
+        100% {
+          opacity: 0.9;
+        }
+        40% {
+          opacity: 0.25;
+        }
+        55% {
+          opacity: 0.7;
+        }
+        70% {
+          opacity: 0.3;
+        }
+      }
+
+      /* ---- the wave ---- */
+      .ripple {
+        animation: ripple 0.4s ease-in-out;
+        animation-delay: var(--d, 0s);
+      }
+      @keyframes ripple {
+        40% {
+          transform: translateY(-0.28em);
+        }
+      }
+
+      /* ---- stick people pushing the caret ---- */
+      .pushers {
+        display: inline-block;
+        position: relative;
+        /* leave room for the crew between the text and the bar */
+        margin-left: 0.55em;
+      }
+      .pushers .cursor {
+        transform-origin: 50% 100%;
+      }
+      .crew {
+        position: absolute;
+        right: 96%;
+        bottom: 0;
+        width: 0.57em;
+        height: 1em;
+        transform-origin: 100% 100%;
+        transition: opacity 0.12s ease-out;
+      }
+      /* typing crew steps aside while the delete crew is on stage */
+      .pushers.crewoff > .crew {
+        opacity: 0;
+      }
+      /* Letters come out of the bar and slide left past the crew (they pass
+         behind the little guys) to their final spot. */
+      .pushedout {
+        transform-origin: 100% 50%;
+        animation: pushedout 0.42s cubic-bezier(0.25, 0.8, 0.3, 1);
+      }
+      @keyframes pushedout {
+        0% {
+          transform: translateX(var(--dx, 1em)) scaleX(0.05);
+          opacity: 0;
+        }
+        /* unfolds in place at the bar first, then travels left */
+        18% {
+          transform: translateX(var(--dx, 1em)) scaleX(0.55);
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(0) scaleX(1);
+        }
+      }
+
+      /* Pure horizontal shove — no rotation anywhere, so nothing tilts. */
+      .pushers.heave .crew {
+        animation: heave 0.22s ease-out;
+      }
+      @keyframes heave {
+        35% {
+          transform: translateX(0.06em);
+        }
+        70% {
+          transform: translateX(0.02em);
+        }
+      }
+      .pushers.heave .cursor {
+        animation: barglide 0.22s ease-out;
+      }
+      @keyframes barglide {
+        30% {
+          transform: translateX(0.07em);
+        }
+      }
+      /* Walk cycle: legs swing in alternating strides around the hip, but
+         only while the caret is actually moving (.walking, set on type). */
+      .crew .leg {
+        transform-box: fill-box;
+      }
+      .leg.lb1 {
+        transform-origin: 100% 0;
+      }
+      .leg.lb2 {
+        transform-origin: 60% 0;
+      }
+      .leg.lt1 {
+        transform-origin: 100% 0;
+      }
+      .leg.lt2 {
+        transform-origin: 25% 0;
+      }
+      .walking .leg {
+        animation: stride 0.45s ease-in-out infinite alternate;
+      }
+      .walking .leg.lt1,
+      .walking .leg.lt2 {
+        animation-name: stride-small;
+      }
+      .walking .leg.lb2,
+      .walking .leg.lt2 {
+        animation-delay: -0.225s;
+      }
+      @keyframes stride {
+        from {
+          transform: rotate(11deg);
+        }
+        to {
+          transform: rotate(-11deg);
+        }
+      }
+      @keyframes stride-small {
+        from {
+          transform: rotate(5deg);
+        }
+        to {
+          transform: rotate(-5deg);
+        }
+      }
+
+      /* ---- squiggle: a wavy caret that undulates in place ---- */
+      /* No blink; the wave phase is redrawn each frame in JS so the
+         round-capped ends stay put while the wave travels through. */
+      .squig {
+        display: inline-block;
+        width: 0.28em;
+        height: 0.95em;
+        margin-left: 0.04em;
+        vertical-align: text-bottom;
+      }
+      .squig svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* ---- fish: leaps on every keystroke ---- */
+      .fishcur {
+        display: inline-block;
+        width: 1.1em;
+        margin-left: 0.08em;
+        vertical-align: text-bottom;
+        animation: fishidle 2.6s ease-in-out infinite;
+      }
+      .fishcur svg {
+        display: block;
+        width: 100%;
+      }
+      .fishcur.leap {
+        animation: fishjump 0.45s cubic-bezier(0.3, 0, 0.3, 1);
+      }
+      @keyframes fishidle {
+        50% {
+          transform: translateY(-0.07em);
+        }
+      }
+      @keyframes fishjump {
+        30% {
+          transform: translateY(-0.85em) rotate(-24deg);
+        }
+        60% {
+          transform: translateY(-0.35em) rotate(12deg);
+        }
+      }
+
+      /* ---- underscore ---- */
+      .underscore {
+        display: inline-block;
+        width: 0.55em;
+        height: 0.09em;
+        margin-left: 0.06em;
+        background: #111;
+        vertical-align: text-bottom;
+        animation: blink 1.1s steps(1) infinite;
+      }
+
+      /* ---- overline: bar on top, letters drop down from it ---- */
+      .overline {
+        display: inline-block;
+        width: 0.55em;
+        height: 0.09em;
+        margin-left: 0.06em;
+        background: #111;
+        vertical-align: text-top;
+        animation: blink 1.1s steps(1) infinite;
+      }
+      /* Clipping sleeve: hides the letter above the bar line, so it can only
+         emerge downward out of the caret, never above it. */
+      .dropwrap {
+        display: inline-block;
+        overflow: hidden;
+        white-space: pre;
+        vertical-align: text-bottom;
+      }
+      .dropin {
+        animation: dropin 0.3s cubic-bezier(0.3, 0, 0.4, 1);
+      }
+      @keyframes dropin {
+        0% {
+          transform: translateY(-1.1em);
+        }
+      }
+      /* The bar stays put over the dropping letter, then hops forward. */
+      .overline.advance {
+        animation: caretadvance 0.34s cubic-bezier(0.3, 0, 0.3, 1);
+      }
+      @keyframes caretadvance {
+        0%,
+        55% {
+          transform: translateX(calc(-1 * var(--w, 0px)));
+        }
+        100% {
+          transform: translateX(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="dj" class="panel">
+      <div class="deck" id="deck-lanes">
+        <h1>Lanes</h1>
+        <div class="options count"></div>
+        <div class="options tabs"></div>
+      </div>
+      <div class="deck" id="deck-type">
+        <h1>Type</h1>
+        <div class="options"></div>
+      </div>
+      <div class="deck" id="deck-del">
+        <h1>Delete</h1>
+        <div class="options"></div>
+      </div>
+      <div class="deck" id="deck-voice">
+        <h1>Sound</h1>
+        <div class="options"></div>
+      </div>
+      <div class="deck" id="deck-font">
+        <h1>Font</h1>
+        <div class="options">
+          <button data-font="mono">system mono (default)</button>
+          <button data-font="host">host grotesk</button>
+          <button data-font="rubikmono">rubik mono one</button>
+          <button data-font="sixtyfour">sixtyfour</button>
+          <button data-font="silkscreen">silkscreen</button>
+          <button data-font="bitcount">bitcount prop single</button>
+          <button data-font="bonbon">bonbon</button>
+          <button data-font="coralpixels">coral pixels</button>
+          <button data-font="momo">momo signature</button>
+          <button data-font="sekuya">sekuya</button>
+          <button data-font="drsugiyama">dr sugiyama</button>
+          <button data-font="candal">candal</button>
+          <button data-font="dawning">dawning of a new day</button>
+          <button data-font="jersey">jersey 10</button>
+          <button data-font="dotgothic">dotgothic16</button>
+        </div>
+      </div>
+      <div class="deck" id="deck-mix">
+        <h1>Mix</h1>
+        <button id="soundtoggle">♪ sound: off</button>
+        <div class="slider-row">
+          <label>volume</label>
+          <input type="range" data-p="master" min="0" max="2" step="0.05" value="1" />
+          <span></span>
+        </div>
+        <div class="slider-row">
+          <label>click</label>
+          <input type="range" data-p="click" min="0" max="2" step="0.05" value="1.2" />
+          <span></span>
+        </div>
+        <div class="slider-row">
+          <label>thud</label>
+          <input type="range" data-p="thud" min="0" max="2" step="0.05" value="0.35" />
+          <span></span>
+        </div>
+        <div class="slider-row">
+          <label>bright</label>
+          <input type="range" data-p="bright" min="0.5" max="2" step="0.05" value="1.15" />
+          <span></span>
+        </div>
+        <div class="slider-row">
+          <label>snap</label>
+          <input type="range" data-p="snap" min="0.4" max="1.5" step="0.05" value="0.75" />
+          <span></span>
+        </div>
+      </div>
+    </nav>
+
+    <div id="stage"></div>
+
+    <script type="module">
+      const stage = document.getElementById('stage')
+
+      function retrigger(el, cls) {
+        el.classList.remove(cls)
+        void el.offsetWidth
+        el.classList.add(cls)
+      }
+
+      /* ================= typing modes ================= */
+
+      // Shared skeleton: big centered line of letter spans, a custom cursor
+      // element, a per-keystroke effect, and strategy-driven backspace.
+      function makeFxMode(cursorHTML, fx) {
+        return {
+          enter(host) {
+            this.host = host
+            host.classList.add('mode-ordinary')
+            host.innerHTML = '<div class="line"></div>'
+            this.line = host.querySelector('.line')
+            const tmp = document.createElement('span')
+            tmp.innerHTML = cursorHTML
+            this.cursor = tmp.firstElementChild
+            this.line.appendChild(this.cursor)
+            this.cursor.addEventListener('animationend', (ev) => {
+              if (ev.target === this.cursor)
+                this.cursor.classList.remove('hop', 'wobble', 'lunge', 'leap', 'advance')
+            })
+          },
+          key(e) {
+            if (e.key === 'Enter') {
+              this.line.insertBefore(document.createElement('br'), this.cursor)
+            } else if (e.key.length === 1) {
+              const s = document.createElement('span')
+              s.className = 'pletter'
+              s.textContent = e.key
+              this.line.insertBefore(s, this.cursor)
+              fx(s, this.cursor)
+            } else {
+              return
+            }
+            e.preventDefault()
+          },
+          backspace(strat) {
+            let prev = this.cursor.previousElementSibling
+            // Skip letters mid-removal AND cursor stand-ins (pac-man,
+            // flipped triangle) — they sit next to the caret and must
+            // never be treated as a letter to delete.
+            while (prev && (prev.classList.contains('removing') || prev.dataset.kind)) {
+              prev = prev.previousElementSibling
+            }
+            if (!prev) return
+            if (prev.tagName === 'BR' || !strat.anim) {
+              prev.remove()
+              return
+            }
+            prev.classList.add('removing')
+            setTimeout(() => prev.remove(), strat.anim(prev, this))
+          },
+        }
+      }
+
+      const caretMode = () => makeFxMode('<span class="cursor blinking"></span>', () => {})
+
+      /* ---- print head: cursor pinned at right edge, text slides left ---- */
+      const printMode = () => ({
+        enter(host) {
+          this.host = host
+          host.classList.add('mode-type')
+          host.innerHTML = '<div class="tape"></div>'
+          this.tape = host.querySelector('.tape')
+          // The pin starts at the same center spot as every other cursor,
+          // gets pushed right as the line grows, and the line wraps once
+          // the pin reaches the right margin — full page width, same start.
+          this.margin = 40
+          this.pinX = host.clientWidth / 2
+          this.tape.style.left = this.pinX + 'px'
+          this.cursor = document.createElement('span')
+          this.cursor.className = 'cursor blinking'
+          this.newLine()
+        },
+        newLine() {
+          this.line = document.createElement('div')
+          this.tape.appendChild(this.line)
+          this.line.appendChild(this.cursor)
+        },
+        press() {
+          retrigger(this.cursor, 'press')
+        },
+        key(e) {
+          if (e.key === 'Enter') {
+            this.newLine()
+          } else if (e.key.length === 1) {
+            const s = document.createElement('span')
+            s.className = 'stamp'
+            s.textContent = e.key
+            this.line.insertBefore(s, this.cursor)
+            let width = 0
+            for (const el of this.line.children) width += el.offsetWidth
+            const maxPin = this.host.clientWidth - this.margin
+            if (width > this.pinX - this.margin) {
+              // Line reached the left margin: push the pin right to make room,
+              // and wrap once the pin itself hits the right margin.
+              this.pinX = Math.min(this.margin + width, maxPin)
+              this.tape.style.left = this.pinX + 'px'
+              if (width > maxPin - this.margin) {
+                this.newLine()
+                this.line.insertBefore(s, this.cursor)
+              }
+            }
+            this.press()
+          } else {
+            return
+          }
+          e.preventDefault()
+        },
+        backspace(strat) {
+          let prev = this.cursor.previousElementSibling
+          while (prev && (prev.classList.contains('removing') || prev.dataset.kind)) {
+            prev = prev.previousElementSibling
+          }
+          if (prev) {
+            if (!strat.anim) {
+              prev.remove()
+              return
+            }
+            prev.classList.add('removing')
+            setTimeout(() => prev.remove(), strat.anim(prev, this))
+          } else if (this.line.previousElementSibling) {
+            const dead = this.line
+            this.line = dead.previousElementSibling
+            dead.remove()
+            this.line.appendChild(this.cursor)
+          }
+        },
+      })
+
+      /* ---- effect typers (factories: one fresh instance per lane) ---- */
+      const ballMode = () => makeFxMode('<span class="ball"></span>', (s, c) => {
+        s.classList.add('squash')
+        retrigger(c, 'hop')
+      })
+      const jellyMode = () => makeFxMode('<span class="jellycur"></span>', (s, c) => {
+        s.classList.add('pop')
+        retrigger(c, 'wobble')
+      })
+      const magnetMode = () => makeFxMode('<span class="cursor blinking"></span>', (s) => {
+        s.style.setProperty('--dx', (Math.random() * 80 - 40).toFixed(0) + 'vw')
+        s.style.setProperty('--dy', (Math.random() * 70 - 35).toFixed(0) + 'vh')
+        s.style.setProperty('--rot', (Math.random() * 360 - 180).toFixed(0) + 'deg')
+        s.classList.add('flyin')
+      })
+      const SPIDER_SVG = `
+        <svg viewBox="0 0 60 46" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="#111" stroke-width="3" fill="none" stroke-linecap="round">
+            <path d="M20 20 Q8 12 4 2"/>
+            <path d="M18 26 Q4 22 1 12"/>
+            <path d="M19 32 Q6 34 2 44"/>
+            <path d="M40 20 Q52 12 56 2"/>
+            <path d="M42 26 Q56 22 59 12"/>
+            <path d="M41 32 Q54 34 58 44"/>
+          </g>
+          <ellipse cx="30" cy="22" rx="13" ry="11" fill="#111"/>
+          <circle cx="30" cy="37" r="6" fill="#111"/>
+          <circle cx="27" cy="36" r="1.6" fill="#fff"/>
+          <circle cx="33" cy="36" r="1.6" fill="#fff"/>
+        </svg>`
+      // Gently curved strand; non-scaling stroke keeps it hair-thin no
+      // matter how far it stretches.
+      const THREAD_SVG = `
+        <svg class="thread" viewBox="0 0 20 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 0 C15 22 5 48 9 70 C11 82 10 90 10 100"
+                stroke="#111" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>
+        </svg>`
+      const spiderMode = () => makeFxMode(`<span class="spider">${SPIDER_SVG}</span>`, (s) => {
+        const sleeve = document.createElement('span')
+        sleeve.className = 'silks'
+        sleeve.style.setProperty('--drop', (0.15 + Math.random() * 0.85).toFixed(2) + 'em')
+        const dur = (2.2 + Math.random() * 1.8).toFixed(2)
+        const delay = (-Math.random() * 2).toFixed(2)
+        sleeve.style.animationDuration = dur + 's'
+        sleeve.style.animationDelay = delay + 's'
+        s.replaceWith(sleeve)
+        sleeve.innerHTML = THREAD_SVG.trim()
+        sleeve.appendChild(s)
+        s.classList.add('bob')
+        s.style.animationDuration = dur + 's'
+        s.style.animationDelay = (+delay - 0.15).toFixed(2) + 's'
+      })
+      const ghostMode = () => makeFxMode('<span class="ghostcur"></span>', (s) => {
+        s.classList.add('materialize')
+      })
+      const waveMode = () => makeFxMode('<span class="cursor blinking"></span>', (s, c) => {
+        const letters = [...c.parentElement.querySelectorAll('.pletter')].reverse()
+        letters.forEach((el, i) => {
+          el.style.setProperty('--d', (i * 0.035).toFixed(3) + 's')
+          retrigger(el, 'ripple')
+        })
+      })
+      const underMode = () => makeFxMode('<span class="underscore"></span>', () => {})
+      const SQUIG_SVG = `
+        <svg viewBox="0 0 20 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <path d="M10 3 L10 117" stroke="#111" stroke-width="6" fill="none" stroke-linecap="round"/>
+        </svg>`
+      // Redraw the wave's phase every frame: the round-capped ends stay
+      // fixed while the wave travels through the caret.
+      const squigMode = () => {
+        const m = makeFxMode(`<span class="squig">${SQUIG_SVG.trim()}</span>`, () => {})
+        const squigBaseEnter = m.enter.bind(m)
+        m.enter = function (host) {
+          squigBaseEnter(host)
+          const path = this.cursor.querySelector('path')
+        const tick = (t) => {
+          if (!path.isConnected) return // mode switched away; stop
+          // Traveling wave with pinned ends: crests ripple along the segment
+          // (never flattening or mirroring), while the taper holds both
+          // ends still so nothing slides or flips.
+          let d = ''
+          for (let y = 3; y <= 117; y += 6) {
+            const u = (y - 3) / 114
+            const taper = Math.sin(Math.PI * u)
+            const x = 10 + 7.5 * taper * Math.sin(u * Math.PI * 3 - t / 140)
+            d += (d ? 'L' : 'M') + x.toFixed(1) + ' ' + y + ' '
+          }
+          path.setAttribute('d', d)
+          requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+        }
+        return m
+      }
+      const overMode = () => makeFxMode('<span class="overline"></span>', (s, c) => {
+        // Sleeve the letter so it can only slide out below the bar.
+        const sleeve = document.createElement('span')
+        sleeve.className = 'dropwrap'
+        s.replaceWith(sleeve)
+        sleeve.appendChild(s)
+        s.classList.add('dropin')
+        // Hold the bar over the letter's spot while it drops, then advance.
+        c.style.setProperty('--w', sleeve.offsetWidth + 'px')
+        retrigger(c, 'advance')
+      })
+      // Two stick figures in full "heave the fridge" pose, shoving the caret
+      // forward one letter at a time.
+      // Stacked totem: one pusher on the ground, one standing on their back,
+      // both shoving the bar at the right edge.
+      const CREW_SVG = `
+        <svg class="crew" viewBox="0 0 80 140" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <!-- bottom pusher -->
+            <g stroke="#111">
+              <path stroke-width="10" d="M32 108 L52 88"/>
+              <g stroke-width="6.5">
+                <path d="M51 90 L80 94"/>
+                <path d="M52 98 L79 104"/>
+                <path class="leg lb1" d="M32 108 L15 126"/>
+                <path class="leg lb2" d="M32 108 L38 117 L23 127"/>
+              </g>
+            </g>
+          </g>
+          <circle cx="62" cy="80" r="7" fill="#111"/>
+          <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <!-- white halo under the climber: clean separation wherever he
+                 crosses the body below (arms halo stops short so the white
+                 round cap never wedges between the hands and the bar) -->
+            <g stroke="#fff">
+              <path stroke-width="17" d="M44 62 L56 40"/>
+              <g stroke-width="12">
+                <path d="M55 42 L70 45"/>
+                <path d="M56 51 L68 56"/>
+                <path class="leg lt1" d="M44 62 L38 86"/>
+                <path class="leg lt2" d="M44 62 L50 71 L42 87"/>
+              </g>
+            </g>
+            <!-- top climber -->
+            <g stroke="#111">
+              <path stroke-width="10" d="M44 62 L56 40"/>
+              <g stroke-width="6.5">
+                <path d="M55 42 L80 46"/>
+                <path d="M56 51 L79 58"/>
+                <path class="leg lt1" d="M44 62 L38 86"/>
+                <path class="leg lt2" d="M44 62 L50 71 L42 87"/>
+              </g>
+            </g>
+          </g>
+          <circle cx="61" cy="30" r="10" fill="#fff"/>
+          <circle cx="61" cy="30" r="7" fill="#111"/>
+        </svg>`
+      // .trim() matters: the line is white-space:pre-wrap, so a stray newline
+      // in the template would render as a literal line break inside the cursor.
+      // A little goldfish that leaps clear of the water on every keystroke.
+      const FISH_SVG = `
+        <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+          <path d="M36 40 L8 22 Q17 40 8 58 Z" fill="#e05c9e"/>
+          <path d="M52 22 Q66 6 82 20 L66 28 Z" fill="#e05c9e"/>
+          <ellipse cx="70" cy="42" rx="36" ry="21" fill="#ff9d5c"/>
+          <path d="M62 48 Q70 62 84 58 L74 48 Z" fill="#e05c9e"/>
+          <circle cx="92" cy="36" r="5" fill="#fff"/>
+          <circle cx="94" cy="36" r="2.4" fill="#111"/>
+        </svg>`
+      const fishMode = () => makeFxMode(`<span class="fishcur">${FISH_SVG.trim()}</span>`, (s, c) => {
+        retrigger(c, 'leap')
+      })
+
+      const pushMode = () => {
+        let strollTimer
+        return makeFxMode(
+        `<span class="pushers">${CREW_SVG.trim()}<span class="cursor blinking"></span></span>`,
+        (s, c) => {
+          // Shift the letter right by the crew gap so its right edge (the
+          // unfold origin) sits exactly at the bar, then slide it left home.
+          const gap = parseFloat(getComputedStyle(c).marginLeft)
+          s.style.setProperty('--dx', gap.toFixed(1) + 'px')
+          s.classList.add('pushedout')
+          retrigger(c, 'heave')
+          // Walk while the caret is moving; stop shortly after typing pauses.
+          c.classList.add('walking')
+          clearTimeout(strollTimer)
+          strollTimer = setTimeout(() => c.classList.remove('walking'), 600)
+        }
+        )
+      }
+      const triMode = () => makeFxMode('<span class="tri"></span>', (s, c) => {
+        retrigger(c, 'lunge')
+      })
+
+      const TYPES = [
+        ['caret', 'caret', caretMode],
+        ['print', 'print head', printMode],
+        ['ball', 'bouncing ball', ballMode],
+        ['jelly', 'jelly', jellyMode],
+        ['magnet', 'magnet', magnetMode],
+        ['spider', 'spider silk', spiderMode],
+        ['ghost', 'ghost', ghostMode],
+        ['wave', 'the wave', waveMode],
+        ['under', 'underscore', underMode],
+        ['over', 'overline drop', overMode],
+        ['squig', 'squiggle', squigMode],
+        ['tri', 'triangle', triMode],
+        ['push', 'stick pushers', pushMode],
+        ['fish', 'jumping fish', fishMode],
+      ]
+
+      /* ================= delete strategies ================= */
+
+      const DELETES = [
+        // no delete persona: the typing caret stays as-is, letters just go
+        ['none', 'none', { anim: null }],
+        [
+          'pac',
+          'pac-man',
+          {
+            flash: 'pac',
+            sound: () => waka(),
+            anim: (el, mode) => {
+              const w = el.offsetWidth
+              el.style.width = w + 'px'
+              void el.offsetWidth // commit the starting width, then shrink
+              el.classList.add('eaten')
+              el.style.width = '0px'
+              // Pac does the moving: lunge left onto the letter and stay
+              // there while the collapsing layout catches up underneath.
+              mode?.flashEl?.animate(
+                [
+                  { transform: 'translateX(0)' },
+                  { transform: `translateX(${-w}px)`, offset: 0.3 },
+                  { transform: 'translateX(0)' },
+                ],
+                { duration: 320, easing: 'ease-out' }
+              )
+              return 150
+            },
+          },
+        ],
+        [
+          'tri',
+          'triangle',
+          {
+            flash: 'tri',
+            sound: () => noiseBurst({ freq: 3000, slideTo: 500, dur: 0.08, vol: 0.1 }),
+            anim: (el) => (el.classList.add('sucked'), 150),
+          },
+        ],
+        [
+          'crew',
+          'stick pushers',
+          {
+            flash: 'crew',
+            sound: () => {
+              noiseBurst({ freq: 700, q: 2, dur: 0.05, vol: 0.15 })
+              thump({ freq: 120, dur: 0.05, vol: 0.2 })
+            },
+            anim: (el) => (el.classList.add('sucked'), 150),
+          },
+        ],
+        ['dissolve', 'dissolve', { anim: (el) => (el.classList.add('dissolving'), 300) }],
+        ['flick', 'flick away', { anim: (el) => (el.classList.add('flicked'), 300) }],
+      ]
+
+      // Some delete styles swap a stand-in for whatever cursor the typing deck
+      // is using (pac-man's body, the flipped triangle), then hand it back.
+      const FLASHES = {
+        pac: {
+          cls: 'pacswap',
+          anim: 'chomping',
+          inner: '<span class="pjaw top"></span><span class="pjaw bottom"></span><span class="eye"></span>',
+        },
+        tri: { cls: 'tridel', anim: 'jab', inner: '' },
+        // mirrored crew on the far side of the caret, shoving it backwards;
+        // inner is lazy because CREW_SVG is defined further down
+        crew: {
+          cls: 'crewdel',
+          anim: 'shoveleft',
+          inner: () => CREW_SVG.trim(),
+          after: true,
+          keepCursor: true,
+          walking: true,
+          hideCrew: true, // the typing crew yields the stage
+        },
+      }
+      // Per-lane: the stand-in element and its timers live on the lane's
+      // mode instance, so parallel lanes can each flash independently.
+      function swapFlash(mode, kind) {
+        const spec = FLASHES[kind]
+        const cur = mode.cursor
+        if (!cur || mode.noPacSwap) return
+        const anchored = spec.after
+          ? mode.flashEl?.previousElementSibling === cur
+          : mode.flashEl?.nextSibling === cur
+        if (!mode.flashEl || !mode.flashEl.isConnected || !anchored || mode.flashEl.dataset.kind !== kind) {
+          mode.flashEl?.remove()
+          const el = document.createElement('span')
+          el.className = spec.cls
+          el.dataset.kind = kind
+          el.innerHTML = typeof spec.inner === 'function' ? spec.inner() : spec.inner
+          if (spec.walking) el.classList.add('walking')
+          // Mark the push cycle finished so the next press can start one.
+          el.addEventListener('animationend', (ev) => {
+            if (['chomp-top', 'jab', 'shoveleft'].includes(ev.animationName)) el.dataset.busy = ''
+          })
+          cur.parentNode.insertBefore(el, spec.after ? cur.nextSibling : cur)
+          mode.flashEl = el
+        }
+        if (!spec.keepCursor) cur.style.display = 'none'
+        if (spec.hideCrew) cur.classList.add('crewoff')
+        mode.flashEl.classList.remove('pacout')
+        // Under key-repeat, presses arrive faster than one animation cycle;
+        // restarting mid-cycle made the mouth stutter shut. Let each cycle
+        // finish before starting the next.
+        if (mode.flashEl.dataset.busy !== '1') {
+          mode.flashEl.dataset.busy = '1'
+          retrigger(mode.flashEl, spec.anim)
+        }
+        // Linger longer than the key-repeat gap so it doesn't blink out
+        // between letters, then fade out instead of vanishing.
+        clearTimeout(mode.flashTimer)
+        mode.flashTimer = setTimeout(() => {
+          const leaving = mode.flashEl
+          mode.flashEl = null
+          leaving.classList.add('pacout')
+          setTimeout(() => {
+            leaving.remove()
+            cur.style.display = ''
+            cur.classList.remove('crewoff')
+          }, 150)
+        }, 700)
+      }
+
+      /* ================= sound ================= */
+
+      let soundOn = false
+      let actx = null
+      // Live-tunable sound character, driven by the Mix sliders.
+      // Defaults lean clicky: thud damped, clicks boosted, tight and bright.
+      const soundCfg = { master: 1, click: 1.2, thud: 0.35, bright: 1.15, snap: 0.75 }
+      const soundBtn = document.getElementById('soundtoggle')
+      soundBtn.addEventListener('click', () => {
+        soundOn = !soundOn
+        if (soundOn && !actx) actx = new AudioContext()
+        if (soundOn) actx.resume()
+        soundBtn.textContent = '♪ sound: ' + (soundOn ? 'on' : 'off')
+        soundBtn.classList.toggle('active', soundOn)
+      })
+
+      function tone({ freq = 440, to, dur = 0.08, type = 'sine', vol = 0.15, delay = 0 }) {
+        if (!soundOn || !actx) return
+        const t0 = actx.currentTime + delay
+        const osc = actx.createOscillator()
+        const g = actx.createGain()
+        osc.type = type
+        osc.frequency.setValueAtTime(freq, t0)
+        if (to) osc.frequency.exponentialRampToValueAtTime(to, t0 + dur)
+        g.gain.setValueAtTime(vol * soundCfg.master, t0)
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + dur)
+        osc.connect(g)
+        g.connect(actx.destination)
+        osc.start(t0)
+        osc.stop(t0 + dur + 0.02)
+      }
+      // Mechanical sounds are noise, not tones: a filtered noise burst is the
+      // clack, a short low sine is the thump of the mechanism bottoming out.
+      let noiseBuf = null
+      function noiseBurst({
+        freq = 2000,
+        slideTo,
+        q = 1,
+        dur = 0.05,
+        vol = 0.2,
+        delay = 0,
+        type = 'bandpass',
+        attack = 0.001,
+      }) {
+        if (!soundOn || !actx) return
+        if (!noiseBuf) {
+          noiseBuf = actx.createBuffer(1, actx.sampleRate, actx.sampleRate)
+          const d = noiseBuf.getChannelData(0)
+          for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+        }
+        const t0 = actx.currentTime + delay
+        const d = dur * soundCfg.snap
+        const src = actx.createBufferSource()
+        src.buffer = noiseBuf
+        src.loop = true
+        const f = actx.createBiquadFilter()
+        f.type = type
+        f.frequency.setValueAtTime(freq * soundCfg.bright, t0)
+        if (slideTo) f.frequency.exponentialRampToValueAtTime(slideTo * soundCfg.bright, t0 + d)
+        f.Q.value = q
+        const g = actx.createGain()
+        g.gain.setValueAtTime(0.0001, t0)
+        g.gain.exponentialRampToValueAtTime(vol * soundCfg.master * soundCfg.click, t0 + attack)
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + d)
+        src.connect(f)
+        f.connect(g)
+        g.connect(actx.destination)
+        src.start(t0)
+        src.stop(t0 + d + 0.02)
+      }
+      function thump({ freq = 120, dur = 0.06, vol = 0.25, delay = 0 }) {
+        // thud level rides its own slider (tone() already applies master)
+        tone({ freq, to: freq * 0.6, dur: dur * soundCfg.snap, type: 'sine', vol: vol * soundCfg.thud, delay })
+      }
+
+      const VOICES = [
+        [
+          'typewriter',
+          () => {
+            noiseBurst({ freq: 2200, q: 2, dur: 0.04, vol: 0.3 })
+            thump({ freq: 140, dur: 0.05, vol: 0.3 })
+            noiseBurst({ freq: 6000, dur: 0.015, vol: 0.08, delay: 0.01 })
+          },
+        ],
+        [
+          'tick',
+          () => {
+            noiseBurst({ freq: 4000, dur: 0.02, vol: 0.12 })
+            thump({ freq: 150, dur: 0.03, vol: 0.08 })
+          },
+        ],
+        ['squelch', () => noiseBurst({ freq: 500, slideTo: 150, type: 'lowpass', q: 3, dur: 0.16, vol: 0.2, attack: 0.02 })],
+        [
+          'doink',
+          () => {
+            noiseBurst({ freq: 1200, dur: 0.02, vol: 0.08 })
+            tone({ freq: 260, to: 95, dur: 0.22, type: 'sine', vol: 0.25 })
+          },
+        ],
+        [
+          'plink',
+          () => {
+            noiseBurst({ freq: 6500, dur: 0.02, vol: 0.12 })
+            thump({ freq: 300, dur: 0.03, vol: 0.08, delay: 0.01 })
+          },
+        ],
+        [
+          'blob',
+          () => {
+            thump({ freq: 95, dur: 0.12, vol: 0.3 })
+            noiseBurst({ freq: 350, type: 'lowpass', dur: 0.1, vol: 0.1, attack: 0.01 })
+          },
+        ],
+        ['whoosh', () => noiseBurst({ freq: 400, slideTo: 3500, q: 4, dur: 0.14, vol: 0.1, attack: 0.02 })],
+        [
+          'silk',
+          () => {
+            noiseBurst({ freq: 5200, dur: 0.02, vol: 0.08 })
+            thump({ freq: 240, dur: 0.02, vol: 0.05 })
+          },
+        ],
+        ['whisper', () => noiseBurst({ freq: 700, q: 6, slideTo: 300, dur: 0.4, vol: 0.08, attack: 0.08 })],
+        ['swish', () => noiseBurst({ freq: 600, slideTo: 1800, q: 2, dur: 0.18, vol: 0.1, attack: 0.03 })],
+        [
+          'lips',
+          () => {
+            noiseBurst({ freq: 800, q: 2, dur: 0.03, vol: 0.15 })
+            thump({ freq: 170, dur: 0.03, vol: 0.1 })
+          },
+        ],
+        ['none', () => {}],
+      ]
+
+      function waka() {
+        noiseBurst({ freq: 900, q: 3, dur: 0.05, vol: 0.15 })
+        thump({ freq: 180, dur: 0.04, vol: 0.15 })
+        noiseBurst({ freq: 600, q: 3, dur: 0.05, vol: 0.15, delay: 0.08 })
+        thump({ freq: 140, dur: 0.04, vol: 0.15, delay: 0.08 })
+      }
+
+      /* ================= DJ console wiring ================= */
+
+      const typeFactories = Object.fromEntries(TYPES.map(([k, , f]) => [k, f]))
+      const deletes = Object.fromEntries(DELETES.map(([k, , s]) => [k, s]))
+      const voices = Object.fromEntries(VOICES)
+
+      // Up to 4 parallel lanes, each with its own type/delete/sound/font.
+      // Keystrokes drive every lane at once; audio follows the selected lane.
+      const LANE_FONT_SIZES = { 1: '8rem', 2: '4.2rem', 3: '3rem', 4: '2.3rem' }
+      const laneCfgs = [
+        { type: 'print', bs: 'pac', voice: 'typewriter', font: 'mono' },
+        { type: 'caret', bs: 'none', voice: 'tick', font: 'mono' },
+        { type: 'ball', bs: 'dissolve', voice: 'doink', font: 'mono' },
+        { type: 'jelly', bs: 'flick', voice: 'blob', font: 'mono' },
+      ]
+      let laneCount = 1
+      let sel = 0
+      let lanes = []
+
+      function applyLaneType(lane) {
+        lane.el.className = 'lane'
+        lane.mode = typeFactories[lane.cfg.type]()
+        lane.mode.enter(lane.el)
+      }
+      function applyLaneFont(lane) {
+        const f = FONTS[lane.cfg.font]
+        lane.el.style.fontFamily = f.stack
+        lane.el.style.fontStretch = f.stretch || 'normal'
+      }
+      function buildLanes() {
+        stage.innerHTML = ''
+        lanes = []
+        for (let i = 0; i < laneCount; i++) {
+          const el = document.createElement('div')
+          el.className = 'lane'
+          el.style.fontSize = LANE_FONT_SIZES[laneCount]
+          stage.appendChild(el)
+          const lane = { el, cfg: laneCfgs[i], mode: null }
+          lanes.push(lane)
+          applyLaneType(lane)
+          applyLaneFont(lane)
+        }
+        if (sel >= laneCount) sel = laneCount - 1
+        refreshDecks()
+      }
+
+      function fillDeck(deckId, list, attr) {
+        const box = document.querySelector(`#${deckId} .options`)
+        for (const [key, label] of list) {
+          const b = document.createElement('button')
+          b.dataset[attr] = key
+          b.textContent = label ?? key
+          box.appendChild(b)
+        }
+      }
+      fillDeck('deck-type', TYPES.map(([k, l]) => [k, l]), 'mode')
+      fillDeck('deck-del', DELETES.map(([k, l]) => [k, l]), 'bs')
+      fillDeck('deck-voice', VOICES.map(([k]) => [k, k]), 'voice')
+      {
+        const countBox = document.querySelector('#deck-lanes .count')
+        for (let n = 1; n <= 4; n++) {
+          const b = document.createElement('button')
+          b.dataset.count = n
+          b.textContent = String(n)
+          countBox.appendChild(b)
+        }
+      }
+
+      function highlight(deckId, attr, value) {
+        for (const b of document.querySelectorAll(`#${deckId} .options button`)) {
+          b.classList.toggle('active', b.dataset[attr] === String(value))
+        }
+      }
+      function refreshDecks() {
+        const tabsBox = document.querySelector('#deck-lanes .tabs')
+        tabsBox.innerHTML = ''
+        for (let i = 0; i < laneCount; i++) {
+          const b = document.createElement('button')
+          b.dataset.lane = i
+          b.textContent = 'lane ' + (i + 1)
+          b.classList.toggle('active', i === sel)
+          tabsBox.appendChild(b)
+        }
+        for (const b of document.querySelectorAll('#deck-lanes .count button')) {
+          b.classList.toggle('active', +b.dataset.count === laneCount)
+        }
+        const cfg = laneCfgs[sel]
+        highlight('deck-type', 'mode', cfg.type)
+        highlight('deck-del', 'bs', cfg.bs)
+        highlight('deck-voice', 'voice', cfg.voice)
+        highlight('deck-font', 'font', cfg.font)
+      }
+
+      document.getElementById('dj').addEventListener('click', (e) => {
+        const btn = e.target.closest('button')
+        if (!btn) return
+        if (btn.dataset.mode) {
+          laneCfgs[sel].type = btn.dataset.mode
+          applyLaneType(lanes[sel])
+          refreshDecks()
+        } else if (btn.dataset.bs) {
+          laneCfgs[sel].bs = btn.dataset.bs
+          refreshDecks()
+        } else if (btn.dataset.voice) {
+          laneCfgs[sel].voice = btn.dataset.voice
+          refreshDecks()
+          voices[btn.dataset.voice]() // audible preview
+        } else if (btn.dataset.font) {
+          laneCfgs[sel].font = btn.dataset.font
+          applyLaneFont(lanes[sel])
+          refreshDecks()
+        } else if (btn.dataset.lane !== undefined) {
+          sel = +btn.dataset.lane
+          refreshDecks()
+        } else if (btn.dataset.count) {
+          laneCount = +btn.dataset.count
+          buildLanes()
+        }
+      })
+
+      // Mix sliders: update config live, with an audible preview.
+      for (const inp of document.querySelectorAll('#deck-mix input[type="range"]')) {
+        const out = inp.parentElement.querySelector('span')
+        const apply = () => {
+          soundCfg[inp.dataset.p] = +inp.value
+          out.textContent = (+inp.value).toFixed(2)
+        }
+        apply()
+        inp.addEventListener('input', () => {
+          apply()
+          voices[laneCfgs[sel].voice]()
+        })
+      }
+
+      /* ================= keyboard ================= */
+
+      window.addEventListener('keydown', (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return
+        if (e.key === 'Backspace') {
+          e.preventDefault()
+          for (const lane of lanes) {
+            const strat = deletes[lane.cfg.bs]
+            // Summon the stand-in first so delete animations can reference it
+            // (pac's lunge needs him on stage before the first bite).
+            if (strat.flash) swapFlash(lane.mode, strat.flash)
+            lane.mode.backspace?.(strat)
+          }
+          const selStrat = deletes[laneCfgs[sel].bs]
+          if (selStrat.sound) selStrat.sound()
+          else if (laneCfgs[sel].voice !== 'none') noiseBurst({ freq: 2500, dur: 0.02, vol: 0.1 })
+        } else {
+          for (const lane of lanes) lane.mode.key(e)
+          if (!e.defaultPrevented) return
+          const v = laneCfgs[sel].voice
+          if (e.key === 'Enter') {
+            if (v === 'typewriter') {
+              // carriage return: lever clunk + real bell (two inharmonic partials)
+              noiseBurst({ freq: 1000, q: 2, dur: 0.06, vol: 0.25 })
+              tone({ freq: 1400, dur: 0.5, type: 'sine', vol: 0.1, delay: 0.05 })
+              tone({ freq: 2153, dur: 0.35, type: 'sine', vol: 0.05, delay: 0.05 })
+            } else if (v !== 'none') {
+              noiseBurst({ freq: 1800, dur: 0.03, vol: 0.1 })
+              thump({ freq: 120, dur: 0.04, vol: 0.12 })
+            }
+          } else {
+            voices[v]()
+          }
+        }
+      })
+
+      /* ================= font settings ================= */
+
+      const FONTS = {
+        mono: { stack: 'ui-monospace, Menlo, monospace' },
+        host: { stack: '"Host Grotesk", sans-serif', probe: 'Host Grotesk' },
+        rubikmono: { stack: '"Rubik Mono One", ui-monospace, monospace', probe: 'Rubik Mono One' },
+        sixtyfour: { stack: '"Sixtyfour", ui-monospace, monospace', probe: 'Sixtyfour' },
+        silkscreen: { stack: '"Silkscreen", ui-monospace, monospace', probe: 'Silkscreen' },
+        bitcount: { stack: '"Bitcount Prop Single", ui-monospace, monospace', probe: 'Bitcount Prop Single' },
+        bonbon: { stack: '"Bonbon", cursive, sans-serif', probe: 'Bonbon' },
+        coralpixels: { stack: '"Coral Pixels", ui-monospace, monospace', probe: 'Coral Pixels' },
+        momo: { stack: '"Momo Signature", cursive, sans-serif', probe: 'Momo Signature' },
+        sekuya: { stack: '"Sekuya", serif', probe: 'Sekuya' },
+        drsugiyama: { stack: '"Dr Sugiyama", cursive, serif', probe: 'Dr Sugiyama' },
+        candal: { stack: '"Candal", sans-serif', probe: 'Candal' },
+        dawning: { stack: '"Dawning of a New Day", cursive, sans-serif', probe: 'Dawning of a New Day' },
+        jersey: { stack: '"Jersey 10", ui-monospace, monospace', probe: 'Jersey 10' },
+        dotgothic: { stack: '"DotGothic16", ui-monospace, monospace', probe: 'DotGothic16' },
+      }
+      const fontsNav = document.getElementById('deck-font')
+
+      // document.fonts.check() lies about uninstalled system fonts, so compare
+      // rendered widths against generic fallbacks instead.
+      function fontRenders(family) {
+        const sample = 'iIlmWw10 @#'
+        const ctx = document.createElement('canvas').getContext('2d')
+        return ['monospace', 'serif', 'sans-serif'].some((generic) => {
+          ctx.font = `32px ${generic}`
+          const base = ctx.measureText(sample).width
+          ctx.font = `32px "${family}", ${generic}`
+          return ctx.measureText(sample).width !== base
+        })
+      }
+      async function flagMissingFonts() {
+        const probes = Object.values(FONTS).filter((f) => f.probe)
+        await Promise.all(probes.map((f) => document.fonts.load(`16px "${f.probe}"`).catch(() => {})))
+        for (const b of fontsNav.querySelectorAll('button[data-font]')) {
+          const f = FONTS[b.dataset.font]
+          if (f.probe) b.classList.toggle('missing', !fontRenders(f.probe))
+        }
+      }
+      document.fonts.ready.then(flagMissingFonts)
+
+      /* ================= init ================= */
+
+      // Keep the stage sized to the space above the DJ console.
+      const djEl = document.getElementById('dj')
+      function sizeStage() {
+        document.documentElement.style.setProperty('--dj-h', djEl.offsetHeight + 'px')
+      }
+      new ResizeObserver(sizeStage).observe(djEl)
+      sizeStage()
+
+      buildLanes()
+    </script>
+  </body>
+</html>
